@@ -7,7 +7,8 @@ import sys
 import argparse
 import time
 from datetime import datetime
-
+from modul.learn.LIMD import LIMD_PAF
+from scipy.stats import truncnorm
 
 import networkx as nx
 import networkx.algorithms.community as nxcom
@@ -22,23 +23,28 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.cuda.amp import autocast
 import torch.cuda.amp
 from conf import settings
-
-
-
+import random
+from numpy import random as nprand
+import numpy as np
+import community as community_Modulation
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import pandas as pd
+#from sklearn import MinMaxScaler
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from imblearn.over_sampling import SMOTE
 ​
     
 %matplotlib inline
 plt.rcParams.update(plt.rcParamsDefault)
 plt.rcParams.update({'figure.figsize': (15, 10)})
     # get reproducible results
-import random
-from numpy import random as nprand
+
 random.seed(123)
 nprand.seed(123)
     
-import numpy as np
-import community as community_Modulation
-import matplotlib.cm as cm
+
 ​
 image_size = 28 # width and length
 no_of_different_labels = 62 		# 10 MINST , 52 for EMNIST#
@@ -129,8 +135,7 @@ array([[0.01, 0.01, 0.01, ..., 0.01, 0.01, 0.01],
        [0.01, 0.01, 0.01, ..., 0.01, 0.01, 0.01],
        [0.01, 0.01, 0.01, ..., 0.01, 0.01, 0.01]])
 
-from modul.learn.LIMD import LIMD_PAF
-from scipy.stats import truncnorm
+
 ​
 def truncated_necess_intens(mean=0, sd=1, low=250, upp=254):
     return truncnorm((low - mean) / sd,
@@ -146,7 +151,7 @@ def truncated_necess_kneighb(mean=0, sd=1, low=1, upp=10):
 
 
 ​
-​ 							/////////////  LIMD learning //////////////////////////////////////////
+​ ///////////////////////////////////////////////////////////////////////////////////////////////////////  LIMD learning //////////////////////////////////////////
 class NeuralNetwork:
         
     
@@ -292,8 +297,10 @@ class NeuralNetwork:
             else:
                 wrongs += 1
         return corrects, wrongs
-					////////////  Restrict LIMD to the optimal performance acc ///////////////
-epochs = 10
+
+	    
+					////////////  Bridge LIMD input characterization and the optimal performance accuracy ///////////////
+epochs = 5
 ​for epoch in range(1, epochs):
 	LIMD = NeuralNetwork(network_structure=[image_pixels, 8, 7, 6],
                                learning_rate=0.01,
@@ -308,6 +315,8 @@ epochs = 10
     if args.local_rank == 0:
         writer.close()
 
+
+	    
                              //////////////////////////// LIMD global maxima calibration /////////////////////////////////////
 
 def sigmoid_(x):
@@ -319,6 +328,9 @@ def tanh_(x):
 def relu_(x):
     return  1 / np.maximum(0, x) + np.maximum(0, x) * (np.maximum(0, x) * 20) 
 
+
+
+	
 							/////// partial derivatives ///////////////
 def sigmoid_der(x):
     return 1/(np.exp(-1*x)+1)
@@ -341,7 +353,7 @@ cp3 = (0, y3)
 
 lr= 0.1
 
-for _ in range(10):
+for _ in range(5):
     new_x1 = cp1[0] - lr * relu_der(y1)
     new_x2 = cp2[0] - lr * tanh_der(y2)
     new_x3 = cp3[0] - lr * sigmoid_der(y3)
@@ -357,10 +369,13 @@ for _ in range(10):
     plt.plot(X, new_y3)         		 ## display sigmoid LIMD global maxima 
     plt.scatter(cp3[0], cp3[1], color="red")	 ## Display convergence toward necessary neuron parameterization
     plt. pause(0.1)
+
+	
            
                               ////////////////////////Eval accuracy ///////////////////////
-    
-    
+
+
+
 LIMD.train(train_imgs, train_labels_necess_feat, epochs=epochs)
 []
 corrects, wrongs = LIMD.evaluate(train_imgs, train_labels_necess_feat)
@@ -382,17 +397,12 @@ Epoch 5/5
 
 accuracy train:  0.99893333333333
 accuracy test 0.9684
-epochs = 10
+epochs = 5
 ​
 
 
 				/////////////////////// Naive Dnn LEARNING /////////////////////////////
-import matplotlib.pyplot as plt
-import pandas as pd
-#from sklearn import MinMaxScaler
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import SMOTE
+
 
 
 #loading the dataset
